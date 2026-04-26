@@ -2,58 +2,74 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Hệ Thống Kho QR Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         .hidden { display: none; }
-        .notification { animation: slideIn 0.5s ease-out; }
+        input { font-size: 16px !important; } /* Chống phóng to trên iPhone */
+        .notification { animation: slideIn 0.5s ease-out; z-index: 9999; }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
     <!-- GIAO DIỆN ĐĂNG NHẬP -->
-    <div id="login-page" class="flex items-center justify-center h-screen">
-        <div class="bg-white p-8 rounded-lg shadow-md w-96">
-            <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">ĐĂNG NHẬP KHO</h2>
-            <input type="text" id="username" placeholder="Tên đăng nhập" class="w-full p-3 border rounded mb-4">
-            <input type="password" id="password" placeholder="Mật khẩu" class="w-full p-3 border rounded mb-4">
-            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700">VÀO HỆ THỐNG</button>
+    <div id="login-page" class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+            <h2 id="auth-title" class="text-2xl font-bold mb-6 text-center text-blue-600">ĐĂNG NHẬP KHO</h2>
+            
+            <div id="login-form">
+                <input type="text" id="user-in" placeholder="Tên đăng nhập" class="w-full p-3 border rounded-lg mb-4 outline-none focus:border-blue-500">
+                <input type="password" id="pass-in" placeholder="Mật khẩu" class="w-full p-3 border rounded-lg mb-4 outline-none focus:border-blue-500">
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" id="remember-me" checked class="mr-2">
+                    <label for="remember-me" class="text-sm text-gray-600">Ghi nhớ đăng nhập</label>
+                </div>
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 mb-4 transition">VÀO HỆ THỐNG</button>
+                <p class="text-center text-sm text-gray-500">Chưa có tài khoản? <a href="javascript:void(0)" onclick="toggleAuth(true)" class="text-blue-600 font-bold">Đăng ký ngay</a></p>
+            </div>
+
+            <div id="register-form" class="hidden">
+                <input type="text" id="reg-name" placeholder="Họ và tên nhân viên" class="w-full p-3 border rounded-lg mb-4 outline-none focus:border-blue-500">
+                <input type="text" id="reg-phone" placeholder="Số điện thoại" class="w-full p-3 border rounded-lg mb-4 outline-none focus:border-blue-500">
+                <input type="password" id="reg-pass" placeholder="Mật khẩu" class="w-full p-3 border rounded-lg mb-4 outline-none focus:border-blue-500">
+                <button onclick="handleRegister()" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold hover:bg-green-700 mb-4 transition">TẠO TÀI KHOẢN</button>
+                <p class="text-center text-sm text-gray-500">Đã có tài khoản? <a href="javascript:void(0)" onclick="toggleAuth(false)" class="text-blue-600 font-bold">Quay lại Đăng nhập</a></p>
+            </div>
         </div>
     </div>
 
     <!-- GIAO DIỆN ADMIN -->
-    <div id="admin-page" class="hidden p-4 lg:p-10">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold">BẢNG ĐIỀU KHIỂN ADMIN</h1>
-            <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded">Thoát</button>
-        </div>
+    <div id="admin-page" class="hidden">
+        <nav class="bg-blue-700 text-white p-4 flex justify-between items-center sticky top-0 z-50">
+            <h1 class="font-bold">ADMIN - QUẢN LÝ KHO</h1>
+            <button onclick="logout()" class="bg-red-500 px-3 py-1 rounded text-sm text-white">Thoát</button>
+        </nav>
         
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Form thêm sản phẩm -->
-            <div class="bg-white p-6 rounded shadow">
-                <h2 class="font-bold mb-4 border-b pb-2">NHẬP KHO MỚI</h2>
-                <input type="text" id="p-name" placeholder="Tên sản phẩm" class="w-full p-2 border mb-2">
-                <input type="text" id="p-id" placeholder="Mã định danh (VD: SP001)" class="w-full p-2 border mb-2">
-                <input type="number" id="p-stock" placeholder="Số lượng" class="w-full p-2 border mb-2">
-                <button onclick="addProduct()" class="w-full bg-green-500 text-white p-2 rounded">THÊM VÀO KHO</button>
+        <div class="p-4 lg:p-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form Thêm Sản Phẩm -->
+            <div class="bg-white p-6 rounded-xl shadow-md h-fit border-t-4 border-green-500">
+                <h2 class="font-bold mb-4 text-gray-700 uppercase">Nhập hàng mới</h2>
+                <input type="text" id="p-name" placeholder="Tên sản phẩm" class="w-full p-2 border rounded mb-2">
+                <input type="text" id="p-id" placeholder="Mã QR (VD: SP001)" class="w-full p-2 border rounded mb-2">
+                <input type="number" id="p-stock" placeholder="Số lượng nhập" class="w-full p-2 border rounded mb-2">
+                <button onclick="addProduct()" class="w-full bg-green-600 text-white p-2 rounded-lg font-bold">THÊM VÀO KHO</button>
             </div>
 
-            <!-- Danh sách sản phẩm -->
-            <div class="lg:col-span-2 bg-white p-6 rounded shadow">
-                <h2 class="font-bold mb-4 border-b pb-2">DANH SÁCH TỒN KHO</h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
+            <!-- Danh Sách Sản Phẩm -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
+                <h2 class="font-bold mb-4 text-gray-700 uppercase">Danh sách tồn kho</h2>
+                <div class="overflow-x-auto text-sm">
+                    <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-50">
-                                <th class="p-2">Ảnh/QR</th>
-                                <th class="p-2">Tên SP</th>
-                                <th class="p-2">Mã SP</th>
-                                <th class="p-2">Số lượng</th>
-                                <th class="p-2">Thao tác</th>
+                            <tr class="bg-gray-100 border-b">
+                                <th class="p-3">QR</th>
+                                <th class="p-3">Sản phẩm</th>
+                                <th class="p-3">Số lượng</th>
+                                <th class="p-3 text-center">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody id="inventory-table"></tbody>
@@ -65,42 +81,96 @@
 
     <!-- GIAO DIỆN NHÂN VIÊN -->
     <div id="staff-page" class="hidden p-4">
-        <div class="text-center">
-            <h1 class="text-2xl font-bold mb-4 text-blue-600">QUÉT MÃ XUẤT KHO</h1>
-            <p class="mb-4">Chào nhân viên: <span id="staff-display-name" class="font-bold"></span></p>
-            <div id="reader" class="mx-auto border-2 border-blue-500 rounded-lg overflow-hidden mb-4" style="max-width: 400px;"></div>
-            <button onclick="startScanner()" class="w-full bg-blue-600 text-white p-5 rounded-lg text-xl font-bold mb-4">MỞ CAMERA QUÉT MÃ</button>
-            <button onclick="logout()" class="w-full bg-gray-400 text-white p-3 rounded">Đăng xuất</button>
+        <div class="max-w-md mx-auto text-center">
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h1 class="text-2xl font-bold text-blue-600 mb-2 uppercase">Quét Mã Xuất Kho</h1>
+                <p class="text-gray-500 mb-6 italic">Nhân viên: <span id="staff-display-name" class="text-black font-bold"></span></p>
+                
+                <div id="reader" class="mx-auto rounded-xl overflow-hidden bg-gray-200 mb-4" style="width: 100%; max-width: 300px; min-height: 300px;"></div>
+                
+                <button onclick="startScanner()" class="w-full bg-blue-600 text-white p-4 rounded-xl text-lg font-bold mb-4 shadow-lg active:scale-95 transition">BẤM ĐỂ QUÉT MÃ</button>
+                <button onclick="logout()" class="w-full text-gray-400 py-2">Đăng xuất</button>
+            </div>
         </div>
     </div>
 
-    <!-- THÔNG BÁO CHO ADMIN (Nằm góc màn hình) -->
-    <div id="notification-area" class="fixed bottom-5 right-5 w-80 space-y-2"></div>
+    <!-- THÔNG BÁO CHO ADMIN -->
+    <div id="notification-area" class="fixed bottom-5 right-5 w-72 space-y-2 pointer-events-none"></div>
 
     <script>
-        // Dữ liệu giả lập (Sau này sẽ kết nối Firebase để lưu vĩnh viễn)
-        let inventory = JSON.parse(localStorage.getItem('inventory')) || [
-            { id: "SP001", name: "Sản phẩm A", stock: 50 }
-        ];
+        // Dữ liệu ban đầu
+        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+        let users = JSON.parse(localStorage.getItem('users')) || [];
+        let currentUser = null;
 
-        let currentUser = "";
-
-        // 1. XỬ LÝ ĐĂNG NHẬP
-        function handleLogin() {
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
-
-            if (user === 'Admin' && pass === '3032002') {
-                currentUser = "Admin";
-                showPage('admin-page');
-                renderInventory();
-            } else if (user !== "" && pass !== "") {
-                currentUser = user;
-                showPage('staff-page');
-                document.getElementById('staff-display-name').innerText = user;
-            } else {
-                alert("Sai tài khoản hoặc mật khẩu!");
+        // KIỂM TRA ĐĂNG NHẬP TỰ ĐỘNG
+        window.onload = function() {
+            const savedUser = localStorage.getItem('isLoggedIn');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                if (currentUser.role === 'admin') {
+                    showPage('admin-page');
+                    renderInventory();
+                } else {
+                    showPage('staff-page');
+                    document.getElementById('staff-display-name').innerText = currentUser.name;
+                }
             }
+        };
+
+        // CHỨC NĂNG ĐĂNG KÝ/ĐĂNG NHẬP
+        function toggleAuth(isRegister) {
+            document.getElementById('auth-title').innerText = isRegister ? 'ĐĂNG KÝ NHÂN VIÊN' : 'ĐĂNG NHẬP KHO';
+            document.getElementById('login-form').classList.toggle('hidden', isRegister);
+            document.getElementById('register-form').classList.toggle('hidden', !isRegister);
+        }
+
+        function handleRegister() {
+            const name = document.getElementById('reg-name').value;
+            const phone = document.getElementById('reg-phone').value;
+            const pass = document.getElementById('reg-pass').value;
+
+            if (!name || !phone || !pass) return alert("Vui lòng nhập đủ thông tin!");
+            if (users.find(u => u.phone === phone)) return alert("Số điện thoại này đã được đăng ký!");
+
+            users.push({ name, phone, pass, role: 'staff' });
+            localStorage.setItem('users', JSON.stringify(users));
+            alert("Đăng ký thành công! Hãy đăng nhập.");
+            toggleAuth(false);
+        }
+
+        function handleLogin() {
+            const userIn = document.getElementById('user-in').value;
+            const passIn = document.getElementById('pass-in').value;
+            const remember = document.getElementById('remember-me').checked;
+
+            let user = null;
+
+            if (userIn === 'Admin' && passIn === '3032002') {
+                user = { name: 'Admin', role: 'admin' };
+            } else {
+                user = users.find(u => (u.name === userIn || u.phone === userIn) && u.pass === passIn);
+            }
+
+            if (user) {
+                currentUser = user;
+                if (remember) localStorage.setItem('isLoggedIn', JSON.stringify(user));
+                
+                if (user.role === 'admin') {
+                    showPage('admin-page');
+                    renderInventory();
+                } else {
+                    showPage('staff-page');
+                    document.getElementById('staff-display-name').innerText = user.name;
+                }
+            } else {
+                alert("Tên đăng nhập hoặc mật khẩu không đúng!");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('isLoggedIn');
+            location.reload();
         }
 
         function showPage(pageId) {
@@ -110,25 +180,29 @@
             document.getElementById(pageId).classList.remove('hidden');
         }
 
-        function logout() { location.reload(); }
-
-        // 2. CHỨC NĂNG ADMIN
+        // QUẢN LÝ KHO (ADMIN)
         function renderInventory() {
             const table = document.getElementById('inventory-table');
             table.innerHTML = "";
-            inventory.forEach(item => {
+            inventory.forEach((item, index) => {
                 table.innerHTML += `
-                    <tr class="border-b">
-                        <td class="p-2"><div id="qr-${item.id}"></div></td>
-                        <td class="p-2">${item.name}</td>
-                        <td class="p-2 font-mono text-sm">${item.id}</td>
-                        <td class="p-2 font-bold text-blue-600">${item.stock}</td>
-                        <td class="p-2"><button onclick="deleteProduct('${item.id}')" class="text-red-500 text-sm">Xóa</button></td>
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3"><div id="qr-${item.id}"></div></td>
+                        <td class="p-3">
+                            <span class="font-bold">${item.name}</span><br>
+                            <span class="text-xs text-gray-400 font-mono">${item.id}</span>
+                        </td>
+                        <td class="p-3 text-lg font-bold text-blue-600">${item.stock}</td>
+                        <td class="p-3 text-center space-y-1">
+                            <button onclick="editProduct(${index})" class="bg-yellow-500 text-white px-2 py-1 rounded text-xs w-full">Sửa</button>
+                            <button onclick="deleteProduct(${index})" class="bg-red-500 text-white px-2 py-1 rounded text-xs w-full">Xóa</button>
+                        </td>
                     </tr>
                 `;
                 setTimeout(() => {
+                    document.getElementById(`qr-${item.id}`).innerHTML = "";
                     new QRCode(document.getElementById(`qr-${item.id}`), { text: item.id, width: 60, height: 60 });
-                }, 100);
+                }, 50);
             });
             localStorage.setItem('inventory', JSON.stringify(inventory));
         }
@@ -137,60 +211,70 @@
             const name = document.getElementById('p-name').value;
             const id = document.getElementById('p-id').value;
             const stock = parseInt(document.getElementById('p-stock').value);
-            if(name && id && stock) {
-                inventory.push({id, name, stock});
+            if (!name || !id || isNaN(stock)) return alert("Vui lòng nhập đủ thông tin!");
+            
+            inventory.push({ id, name, stock });
+            renderInventory();
+            document.getElementById('p-name').value = ""; document.getElementById('p-id').value = ""; document.getElementById('p-stock').value = "";
+        }
+
+        function editProduct(index) {
+            const newName = prompt("Nhập tên mới sản phẩm:", inventory[index].name);
+            const newStock = prompt("Nhập số lượng tồn kho mới:", inventory[index].stock);
+            if (newName !== null && newStock !== null) {
+                inventory[index].name = newName;
+                inventory[index].stock = parseInt(newStock);
                 renderInventory();
-                alert("Đã thêm sản phẩm!");
             }
         }
 
-        // 3. CHỨC NĂNG NHÂN VIÊN (QUÉT MÃ)
+        function deleteProduct(index) {
+            if (confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
+                inventory.splice(index, 1);
+                renderInventory();
+            }
+        }
+
+        // QUÉT MÃ (NHÂN VIÊN)
         function startScanner() {
             const html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: 250 },
-                (decodedText) => {
-                    html5QrCode.stop();
-                    processExport(decodedText);
-                }
-            ).catch(err => alert("Lỗi camera: " + err));
+            const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+            
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                html5QrCode.stop();
+                processExport(decodedText);
+            }).catch(err => alert("Lỗi camera: Hãy đảm bảo bạn đã cấp quyền sử dụng camera."));
         }
 
         function processExport(productId) {
             const product = inventory.find(p => p.id === productId);
-            if (!product) {
-                alert("Mã sản phẩm không tồn tại!");
-                return;
-            }
+            if (!product) return alert("Mã QR không có trong hệ thống!");
 
-            const amount = prompt(`Sản phẩm: ${product.name}\nHiện có: ${product.stock}\nNhập số lượng muốn lấy:`, "1");
+            const amount = prompt(`Sản phẩm: ${product.name}\nTồn kho: ${product.stock}\nNhập số lượng muốn lấy:`, "1");
             const qty = parseInt(amount);
 
             if (qty > 0 && qty <= product.stock) {
                 product.stock -= qty;
                 localStorage.setItem('inventory', JSON.stringify(inventory));
-                sendNotificationToAdmin(currentUser, product.name, qty);
-                alert("Xuất kho thành công!");
-                if(currentUser !== "Admin") showPage('staff-page');
+                sendNotification(currentUser.name, product.name, qty);
+                alert("Đã xuất kho thành công!");
+                if(currentUser.role === 'admin') renderInventory();
             } else {
-                alert("Số lượng không hợp lệ hoặc kho không đủ!");
+                alert("Số lượng không hợp lệ hoặc kho không đủ hàng!");
             }
         }
 
-        // 4. HỆ THỐNG THÔNG BÁO (CHỈ ADMIN NHẬN ĐƯỢC)
-        function sendNotificationToAdmin(staff, prodName, qty) {
-            // Trong thực tế, hàm này sẽ gửi dữ liệu lên Server. 
-            // Ở bản demo này, nó sẽ tạo một thông báo nổi trên màn hình nếu đang mở tab Admin.
+        function sendNotification(staff, prodName, qty) {
             const area = document.getElementById('notification-area');
             const toast = document.createElement('div');
-            toast.className = "notification bg-blue-600 text-white p-4 rounded shadow-lg border-l-4 border-yellow-400";
+            toast.className = "notification bg-white border-l-4 border-blue-600 p-4 rounded shadow-xl text-sm pointer-events-auto mb-2";
             toast.innerHTML = `
-                <p class="font-bold">⚠️ THÔNG BÁO XUẤT KHO</p>
-                <p>Nhân viên <b>${staff}</b> vừa lấy <b>${qty}</b> ${prodName}</p>
+                <p class="font-bold text-blue-700">⚠️ THÔNG BÁO XUẤT KHO</p>
+                <p>Nhân viên: <b>${staff}</b></p>
+                <p>Lấy <b>${qty}</b> cái <b>${prodName}</b></p>
             `;
             area.appendChild(toast);
-            setTimeout(() => toast.remove(), 8000); // Tự biến mất sau 8 giây
+            setTimeout(() => toast.remove(), 10000);
         }
     </script>
 </body>
