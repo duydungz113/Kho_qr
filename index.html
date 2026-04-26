@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Kho QR Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        .hidden { display: none; }
+        .notification { animation: slideIn 0.5s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- GIAO DIỆN ĐĂNG NHẬP -->
+    <div id="login-page" class="flex items-center justify-center h-screen">
+        <div class="bg-white p-8 rounded-lg shadow-md w-96">
+            <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">ĐĂNG NHẬP KHO</h2>
+            <input type="text" id="username" placeholder="Tên đăng nhập" class="w-full p-3 border rounded mb-4">
+            <input type="password" id="password" placeholder="Mật khẩu" class="w-full p-3 border rounded mb-4">
+            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-3 rounded font-bold hover:bg-blue-700">VÀO HỆ THỐNG</button>
+        </div>
+    </div>
+
+    <!-- GIAO DIỆN ADMIN -->
+    <div id="admin-page" class="hidden p-4 lg:p-10">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">BẢNG ĐIỀU KHIỂN ADMIN</h1>
+            <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded">Thoát</button>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form thêm sản phẩm -->
+            <div class="bg-white p-6 rounded shadow">
+                <h2 class="font-bold mb-4 border-b pb-2">NHẬP KHO MỚI</h2>
+                <input type="text" id="p-name" placeholder="Tên sản phẩm" class="w-full p-2 border mb-2">
+                <input type="text" id="p-id" placeholder="Mã định danh (VD: SP001)" class="w-full p-2 border mb-2">
+                <input type="number" id="p-stock" placeholder="Số lượng" class="w-full p-2 border mb-2">
+                <button onclick="addProduct()" class="w-full bg-green-500 text-white p-2 rounded">THÊM VÀO KHO</button>
+            </div>
+
+            <!-- Danh sách sản phẩm -->
+            <div class="lg:col-span-2 bg-white p-6 rounded shadow">
+                <h2 class="font-bold mb-4 border-b pb-2">DANH SÁCH TỒN KHO</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="p-2">Ảnh/QR</th>
+                                <th class="p-2">Tên SP</th>
+                                <th class="p-2">Mã SP</th>
+                                <th class="p-2">Số lượng</th>
+                                <th class="p-2">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GIAO DIỆN NHÂN VIÊN -->
+    <div id="staff-page" class="hidden p-4">
+        <div class="text-center">
+            <h1 class="text-2xl font-bold mb-4 text-blue-600">QUÉT MÃ XUẤT KHO</h1>
+            <p class="mb-4">Chào nhân viên: <span id="staff-display-name" class="font-bold"></span></p>
+            <div id="reader" class="mx-auto border-2 border-blue-500 rounded-lg overflow-hidden mb-4" style="max-width: 400px;"></div>
+            <button onclick="startScanner()" class="w-full bg-blue-600 text-white p-5 rounded-lg text-xl font-bold mb-4">MỞ CAMERA QUÉT MÃ</button>
+            <button onclick="logout()" class="w-full bg-gray-400 text-white p-3 rounded">Đăng xuất</button>
+        </div>
+    </div>
+
+    <!-- THÔNG BÁO CHO ADMIN (Nằm góc màn hình) -->
+    <div id="notification-area" class="fixed bottom-5 right-5 w-80 space-y-2"></div>
+
+    <script>
+        // Dữ liệu giả lập (Sau này sẽ kết nối Firebase để lưu vĩnh viễn)
+        let inventory = JSON.parse(localStorage.getItem('inventory')) || [
+            { id: "SP001", name: "Sản phẩm A", stock: 50 }
+        ];
+
+        let currentUser = "";
+
+        // 1. XỬ LÝ ĐĂNG NHẬP
+        function handleLogin() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            if (user === 'Admin' && pass === '3032002') {
+                currentUser = "Admin";
+                showPage('admin-page');
+                renderInventory();
+            } else if (user !== "" && pass !== "") {
+                currentUser = user;
+                showPage('staff-page');
+                document.getElementById('staff-display-name').innerText = user;
+            } else {
+                alert("Sai tài khoản hoặc mật khẩu!");
+            }
+        }
+
+        function showPage(pageId) {
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('admin-page').classList.add('hidden');
+            document.getElementById('staff-page').classList.add('hidden');
+            document.getElementById(pageId).classList.remove('hidden');
+        }
+
+        function logout() { location.reload(); }
+
+        // 2. CHỨC NĂNG ADMIN
+        function renderInventory() {
+            const table = document.getElementById('inventory-table');
+            table.innerHTML = "";
+            inventory.forEach(item => {
+                table.innerHTML += `
+                    <tr class="border-b">
+                        <td class="p-2"><div id="qr-${item.id}"></div></td>
+                        <td class="p-2">${item.name}</td>
+                        <td class="p-2 font-mono text-sm">${item.id}</td>
+                        <td class="p-2 font-bold text-blue-600">${item.stock}</td>
+                        <td class="p-2"><button onclick="deleteProduct('${item.id}')" class="text-red-500 text-sm">Xóa</button></td>
+                    </tr>
+                `;
+                setTimeout(() => {
+                    new QRCode(document.getElementById(`qr-${item.id}`), { text: item.id, width: 60, height: 60 });
+                }, 100);
+            });
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+        }
+
+        function addProduct() {
+            const name = document.getElementById('p-name').value;
+            const id = document.getElementById('p-id').value;
+            const stock = parseInt(document.getElementById('p-stock').value);
+            if(name && id && stock) {
+                inventory.push({id, name, stock});
+                renderInventory();
+                alert("Đã thêm sản phẩm!");
+            }
+        }
+
+        // 3. CHỨC NĂNG NHÂN VIÊN (QUÉT MÃ)
+        function startScanner() {
+            const html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: 250 },
+                (decodedText) => {
+                    html5QrCode.stop();
+                    processExport(decodedText);
+                }
+            ).catch(err => alert("Lỗi camera: " + err));
+        }
+
+        function processExport(productId) {
+            const product = inventory.find(p => p.id === productId);
+            if (!product) {
+                alert("Mã sản phẩm không tồn tại!");
+                return;
+            }
+
+            const amount = prompt(`Sản phẩm: ${product.name}\nHiện có: ${product.stock}\nNhập số lượng muốn lấy:`, "1");
+            const qty = parseInt(amount);
+
+            if (qty > 0 && qty <= product.stock) {
+                product.stock -= qty;
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+                sendNotificationToAdmin(currentUser, product.name, qty);
+                alert("Xuất kho thành công!");
+                if(currentUser !== "Admin") showPage('staff-page');
+            } else {
+                alert("Số lượng không hợp lệ hoặc kho không đủ!");
+            }
+        }
+
+        // 4. HỆ THỐNG THÔNG BÁO (CHỈ ADMIN NHẬN ĐƯỢC)
+        function sendNotificationToAdmin(staff, prodName, qty) {
+            // Trong thực tế, hàm này sẽ gửi dữ liệu lên Server. 
+            // Ở bản demo này, nó sẽ tạo một thông báo nổi trên màn hình nếu đang mở tab Admin.
+            const area = document.getElementById('notification-area');
+            const toast = document.createElement('div');
+            toast.className = "notification bg-blue-600 text-white p-4 rounded shadow-lg border-l-4 border-yellow-400";
+            toast.innerHTML = `
+                <p class="font-bold">⚠️ THÔNG BÁO XUẤT KHO</p>
+                <p>Nhân viên <b>${staff}</b> vừa lấy <b>${qty}</b> ${prodName}</p>
+            `;
+            area.appendChild(toast);
+            setTimeout(() => toast.remove(), 8000); // Tự biến mất sau 8 giây
+        }
+    </script>
+</body>
+</html>
