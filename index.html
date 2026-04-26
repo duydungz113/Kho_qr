@@ -3,122 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hệ Thống Kho Đám Mây Pro</title>
-    <!-- Firebase SDK -->
+    <title>Hệ Thống Kho Đám Mây Toàn Diện</title>
+    
+    <!-- Firebase & Thư viện -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <!-- UI & QR Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <style>
-        .hidden { display: none; }
-        input { font-size: 16px !important; }
-        .notification { animation: slideIn 0.5s ease-out; z-index: 9999; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        .qr-small img { display: inline-block !important; border: 2px solid #eee; padding: 2px; background: white; }
+        @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600;800&display=swap');
+        body { font-family: 'Lexend', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .hidden { display: none !important; }
+        .qr-canvas canvas { display: inline-block !important; border: 3px solid white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-press:active { transform: scale(0.95); }
+        #reader video { border-radius: 24px !important; object-fit: cover !important; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-slate-50 min-h-screen text-slate-900">
 
-    <div id="loading" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-[100]">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <p class="text-blue-600 font-bold">ĐANG KẾT NỐI ĐÁM MÂY...</p>
+    <!-- MÀN HÌNH CHỜ -->
+    <div id="loader" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center">
+        <div class="w-14 h-14 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <p class="mt-4 font-bold text-blue-600 tracking-widest">HỆ THỐNG ĐANG SẴN SÀNG...</p>
     </div>
 
-    <!-- GIAO DIỆN ĐĂNG NHẬP -->
-    <div id="login-page" class="flex items-center justify-center min-h-screen p-4 hidden">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border-t-8 border-blue-600">
-            <h2 id="auth-title" class="text-3xl font-extrabold mb-8 text-center text-gray-800 tracking-tight">ĐĂNG NHẬP</h2>
+    <!-- TRANG ĐĂNG NHẬP / ĐĂNG KÝ -->
+    <div id="auth-page" class="hidden min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-700 to-blue-500">
+        <div class="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <h2 id="auth-title" class="text-3xl font-extrabold text-slate-800">ĐĂNG NHẬP</h2>
+                <p class="text-slate-400 text-sm mt-2">Hệ thống quản lý kho QR Cloud</p>
+            </div>
             
-            <div id="login-form">
-                <div class="space-y-4">
-                    <input type="text" id="user-in" placeholder="SĐT hoặc 'Admin'" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    <input type="password" id="pass-in" placeholder="Mật khẩu" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition">
-                </div>
-                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold text-lg mt-8 shadow-lg hover:bg-blue-700 active:scale-95 transition">VÀO HỆ THỐNG</button>
-                <div class="mt-6 text-center text-sm text-gray-500">
-                    Chưa có tài khoản? <button onclick="toggleAuth(true)" class="text-blue-600 font-bold hover:underline">Đăng ký nhân viên</button>
-                </div>
+            <div id="login-form" class="space-y-4">
+                <input type="text" id="login-user" placeholder="SĐT hoặc 'Admin'" class="w-full p-4 bg-slate-100 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                <input type="password" id="login-pass" placeholder="Mật khẩu" class="w-full p-4 bg-slate-100 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-4 rounded-2xl font-black text-lg shadow-lg hover:bg-blue-700 btn-press transition-all">VÀO HỆ THỐNG</button>
+                <button onclick="toggleAuth(true)" class="w-full text-blue-600 font-bold text-sm">Chưa có tài khoản? Đăng ký ngay</button>
             </div>
 
-            <div id="register-form" class="hidden">
-                <div class="space-y-4">
-                    <input type="text" id="reg-name" placeholder="Họ tên nhân viên" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition">
-                    <input type="text" id="reg-phone" placeholder="Số điện thoại đăng nhập" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition">
-                    <input type="password" id="reg-pass" placeholder="Mật khẩu tự chọn" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500 transition">
-                </div>
-                <button onclick="handleRegister()" class="w-full bg-green-600 text-white p-4 rounded-xl font-bold text-lg mt-8 shadow-lg hover:bg-green-700 active:scale-95 transition">TẠO TÀI KHOẢN</button>
-                <div class="mt-6 text-center text-sm text-gray-500">
-                    Đã có tài khoản? <button onclick="toggleAuth(false)" class="text-blue-600 font-bold hover:underline">Quay lại Đăng nhập</button>
-                </div>
+            <div id="register-form" class="hidden space-y-4">
+                <input type="text" id="reg-name" placeholder="Họ tên nhân viên" class="w-full p-4 bg-slate-100 border-none rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-medium">
+                <input type="text" id="reg-phone" placeholder="Số điện thoại" class="w-full p-4 bg-slate-100 border-none rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-medium">
+                <input type="password" id="reg-pass" placeholder="Mật khẩu tự chọn" class="w-full p-4 bg-slate-100 border-none rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-medium">
+                <button onclick="handleRegister()" class="w-full bg-green-600 text-white p-4 rounded-2xl font-black text-lg shadow-lg btn-press">ĐĂNG KÝ TÀI KHOẢN</button>
+                <button onclick="toggleAuth(false)" class="w-full text-slate-500 font-bold text-sm">Quay lại Đăng nhập</button>
             </div>
         </div>
     </div>
 
-    <!-- GIAO DIỆN ADMIN -->
+    <!-- TRANG CHỦ ADMIN -->
     <div id="admin-page" class="hidden">
-        <nav class="bg-gray-900 text-white p-5 flex justify-between items-center sticky top-0 z-50">
-            <div class="flex items-center space-x-2">
-                <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="font-black tracking-widest text-lg">ADMIN KHO</span>
-            </div>
-            <button onclick="logout()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-bold text-sm transition">THOÁT</button>
+        <nav class="bg-white border-b p-4 flex justify-between items-center sticky top-0 z-50">
+            <span class="font-black text-blue-600 text-xl tracking-tighter uppercase">Admin Tổng Kho</span>
+            <button onclick="logout()" class="bg-red-50 px-4 py-2 rounded-xl text-red-500 font-bold text-xs uppercase">Thoát</button>
         </nav>
-        
-        <div class="p-4 lg:p-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Form Nhập -->
-            <div class="bg-white p-8 rounded-2xl shadow-xl h-fit border border-gray-100">
-                <h3 class="font-black mb-6 text-gray-800 text-xl border-b pb-4 uppercase">Nhập hàng mới</h3>
-                <div class="space-y-4">
-                    <input type="text" id="p-name" placeholder="Tên sản phẩm" class="w-full p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
-                    <input type="text" id="p-id" placeholder="Mã QR định danh (VD: SP01)" class="w-full p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
-                    <input type="number" id="p-stock" placeholder="Số lượng tồn kho" class="w-full p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
-                    <button onclick="addProduct()" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">ĐƯA LÊN ĐÁM MÂY</button>
+
+        <main class="p-4 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Nhập kho -->
+            <div class="lg:col-span-4">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                    <h3 class="font-black text-slate-800 mb-6 text-sm uppercase">Tạo / Nhập thêm hàng</h3>
+                    <div class="space-y-4">
+                        <input type="text" id="p-name" placeholder="Tên sản phẩm" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="p-id" placeholder="Mã QR định danh" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        <input type="number" id="p-stock" placeholder="Số lượng" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500">
+                        <button onclick="adminUpdateStock()" class="w-full bg-blue-600 text-white p-4 rounded-2xl font-black shadow-lg btn-press uppercase">Xác nhận lưu kho</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Bảng Kho -->
-            <div class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-                <h3 class="font-black mb-6 text-gray-800 text-xl border-b pb-4 uppercase text-center">Danh sách tồn kho thực tế</h3>
-                <div class="overflow-x-auto text-sm">
+            <!-- Bảng hàng hóa -->
+            <div class="lg:col-span-8 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 bg-slate-50/50 border-b font-black text-sm uppercase tracking-widest text-slate-500">Danh sách tồn kho thực tế</div>
+                <div class="overflow-x-auto">
                     <table class="w-full text-left">
-                        <thead>
-                            <tr class="bg-gray-50 text-gray-500 uppercase">
-                                <th class="p-4">Ảnh Mã QR</th>
-                                <th class="p-4">Sản phẩm</th>
-                                <th class="p-4 text-center">Số lượng</th>
-                                <th class="p-4 text-right">Quản lý</th>
-                            </tr>
+                        <thead class="text-[10px] text-slate-400 uppercase font-black border-b">
+                            <tr><th class="p-6">QR</th><th class="p-6">Sản phẩm</th><th class="p-6 text-center">Tồn</th><th class="p-6 text-right">Sửa/Xóa</th></tr>
                         </thead>
-                        <tbody id="inventory-table" class="divide-y divide-gray-100"></tbody>
+                        <tbody id="admin-inventory-list" class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
-    <!-- GIAO DIỆN NHÂN VIÊN -->
-    <div id="staff-page" class="hidden p-4 min-h-screen flex flex-col items-center justify-center">
-        <div class="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 text-center">
-            <h1 class="text-3xl font-black text-blue-600 mb-2">QUÉT MÃ XUẤT KHO</h1>
-            <p class="text-gray-400 mb-8 italic">Xin chào, <span id="staff-name-display" class="text-gray-800 font-bold not-italic"></span></p>
-            
-            <div id="reader" class="mx-auto rounded-3xl overflow-hidden bg-black mb-8 shadow-inner border-8 border-gray-50" style="width: 100%; aspect-ratio: 1/1;"></div>
-            
-            <button onclick="startScanner()" class="w-full bg-blue-600 text-white p-6 rounded-2xl font-black text-xl shadow-xl active:scale-95 transition flex items-center justify-center space-x-3">
-                <span>MỞ CAMERA QUÉT</span>
+    <!-- TRANG CHỦ NHÂN VIÊN -->
+    <div id="staff-page" class="hidden">
+        <nav class="bg-white border-b p-5 flex justify-between items-center sticky top-0 z-50">
+            <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase">Nhân viên trực kho</p>
+                <p id="staff-display-name" class="font-black text-blue-600"></p>
+            </div>
+            <button onclick="logout()" class="text-slate-400 font-bold text-xs uppercase">Thoát</button>
+        </nav>
+
+        <div class="p-4 max-w-md mx-auto space-y-6">
+            <!-- Nút quét -->
+            <button onclick="openScanner()" class="w-full bg-blue-600 text-white p-6 rounded-[2rem] font-black text-xl shadow-xl flex items-center justify-center gap-4 btn-press">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                QUÉT MÃ LẤY HÀNG
             </button>
-            
-            <button onclick="logout()" class="mt-8 text-gray-400 font-bold hover:text-red-500 transition">ĐĂNG XUẤT</button>
+
+            <!-- Xem kho -->
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b font-black text-[10px] uppercase text-slate-400">Danh mục xem số lượng</div>
+                <div id="staff-inventory-list" class="divide-y divide-slate-100"></div>
+            </div>
         </div>
     </div>
 
-    <!-- KHU VỰC THÔNG BÁO -->
-    <div id="notification-area" class="fixed bottom-5 right-5 w-80 space-y-3 pointer-events-none"></div>
+    <!-- MÀN HÌNH QUÉT MÃ (NHÂN VIÊN) -->
+    <div id="scanner-modal" class="fixed inset-0 bg-black z-[100] hidden flex flex-col items-center justify-center p-6">
+        <div id="reader" class="w-full max-w-sm overflow-hidden"></div>
+        <button onclick="closeScanner()" class="mt-8 bg-white/20 text-white px-8 py-3 rounded-full font-bold uppercase text-xs tracking-widest">Đóng Camera</button>
+    </div>
+
+    <!-- THÔNG BÁO CHO ADMIN -->
+    <div id="toast-container" class="fixed bottom-6 right-6 w-80 space-y-3 z-[9999] pointer-events-none"></div>
 
     <script>
-        // --- 1. CẤU HÌNH FIREBASE CỦA BẠN (ĐÃ TỰ ĐỘNG ĐIỀN) ---
+        // --- CẤU HÌNH FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyDc-VCCLr_IeQIH42OYsyLjOaQq5YgJ5DE",
             authDomain: "khoqr-d67fd.firebaseapp.com",
@@ -131,167 +138,203 @@
         
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        let currentUser = JSON.parse(localStorage.getItem('kho_session'));
+        let scanner = null;
 
-        let currentUser = JSON.parse(localStorage.getItem('savedUser'));
-
-        // --- 2. ĐIỀU HƯỚNG ---
-        window.onload = function() {
-            document.getElementById('loading').classList.add('hidden');
+        // --- KHỞI CHẠY ---
+        window.onload = () => {
+            document.getElementById('loader').classList.add('hidden');
             if(currentUser) {
-                if(currentUser.role === 'admin') {
-                    showPage('admin-page');
-                    loadAdminData();
-                } else {
-                    showPage('staff-page');
-                    document.getElementById('staff-name-display').innerText = currentUser.name;
-                }
+                renderUI();
             } else {
-                showPage('login-page');
+                document.getElementById('auth-page').classList.remove('hidden');
             }
         };
 
-        function showPage(pageId) {
-            document.getElementById('login-page').classList.add('hidden');
-            document.getElementById('admin-page').classList.add('hidden');
-            document.getElementById('staff-page').classList.add('hidden');
-            document.getElementById(pageId).classList.remove('hidden');
+        function renderUI() {
+            document.getElementById('auth-page').classList.add('hidden');
+            if(currentUser.role === 'admin') {
+                document.getElementById('admin-page').classList.remove('hidden');
+                initAdmin();
+            } else {
+                document.getElementById('staff-page').classList.remove('hidden');
+                document.getElementById('staff-display-name').innerText = currentUser.name;
+                initStaff();
+            }
         }
 
-        // --- 3. ĐĂNG KÝ / ĐĂNG NHẬP ---
-        function toggleAuth(reg) {
-            document.getElementById('login-form').classList.toggle('hidden', reg);
-            document.getElementById('register-form').classList.toggle('hidden', !reg);
-            document.getElementById('auth-title').innerText = reg ? 'ĐĂNG KÝ' : 'ĐĂNG NHẬP';
+        // --- ĐĂNG KÝ / ĐĂNG NHẬP ---
+        function toggleAuth(isReg) {
+            document.getElementById('login-form').classList.toggle('hidden', isReg);
+            document.getElementById('register-form').classList.toggle('hidden', !isReg);
+            document.getElementById('auth-title').innerText = isReg ? 'ĐĂNG KÝ' : 'ĐĂNG NHẬP';
         }
 
         function handleRegister() {
             const name = document.getElementById('reg-name').value;
             const phone = document.getElementById('reg-phone').value;
             const pass = document.getElementById('reg-pass').value;
-            if(!name || !phone || !pass) return alert("Vui lòng điền đủ 3 thông tin!");
+            if(!name || !phone || !pass) return alert("Vui lòng điền đủ thông tin!");
             
             db.ref('users/' + phone).set({ name, phone, pass, role: 'staff' }, (err) => {
-                if(!err) { alert("Đăng ký thành công! Hãy đăng nhập ngay."); toggleAuth(false); }
+                if(!err) {
+                    alert("Đăng ký thành công! Hãy đăng nhập bằng tài khoản vừa tạo.");
+                    toggleAuth(false);
+                    // Xóa trắng ô nhập
+                    document.getElementById('reg-name').value = "";
+                    document.getElementById('reg-phone').value = "";
+                    document.getElementById('reg-pass').value = "";
+                }
             });
         }
 
         function handleLogin() {
-            const userIn = document.getElementById('user-in').value;
-            const passIn = document.getElementById('pass-in').value;
+            const userIn = document.getElementById('login-user').value;
+            const passIn = document.getElementById('login-pass').value;
 
             if(userIn === 'Admin' && passIn === '3032002') {
-                loginSuccess({ name: 'Admin', role: 'admin' });
+                saveSession({ name: 'Admin Tổng', role: 'admin' });
             } else {
                 db.ref('users/' + userIn).once('value', (s) => {
                     const u = s.val();
-                    if(u && u.pass === passIn) loginSuccess(u);
-                    else alert("Sai tài khoản hoặc mật khẩu!");
+                    if(u && u.pass === passIn) saveSession(u);
+                    else alert("Sai số điện thoại hoặc mật khẩu!");
                 });
             }
         }
 
-        function loginSuccess(user) {
-            localStorage.setItem('savedUser', JSON.stringify(user));
+        function saveSession(u) {
+            localStorage.setItem('kho_session', JSON.stringify(u));
             location.reload();
         }
 
-        function logout() { localStorage.removeItem('savedUser'); location.reload(); }
+        function logout() { localStorage.removeItem('kho_session'); location.reload(); }
 
-        // --- 4. LOGIC QUẢN TRỊ ---
-        function loadAdminData() {
+        // --- DÀNH CHO ADMIN ---
+        function initAdmin() {
             db.ref('inventory').on('value', (s) => {
                 const data = s.val();
-                const table = document.getElementById('inventory-table');
-                table.innerHTML = "";
-                for(let key in data) {
-                    const item = data[key];
-                    table.innerHTML += `
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="p-4"><div id="qr-${key}" class="qr-small" onclick="printQR('${key}')"></div></td>
-                            <td class="p-4"><span class="font-black text-gray-800">${item.name}</span><br><span class="text-xs font-mono text-gray-400">${key}</span></td>
-                            <td class="p-4 text-center font-black text-2xl text-blue-600">${item.stock}</td>
-                            <td class="p-4 text-right space-y-1">
-                                <button onclick="editStock('${key}')" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-md text-xs font-bold block ml-auto">SỬA KHO</button>
-                                <button onclick="deleteItem('${key}')" class="bg-red-50 text-red-600 px-3 py-1 rounded-md text-xs font-bold block ml-auto uppercase">Xóa</button>
+                const list = document.getElementById('admin-inventory-list');
+                list.innerHTML = "";
+                for(let id in data) {
+                    const item = data[id];
+                    list.insertAdjacentHTML('beforeend', `
+                        <tr>
+                            <td class="p-6"><div id="qr-${id}" class="qr-canvas"></div></td>
+                            <td class="p-6"><b class="text-slate-700">${item.name}</b><br><span class="text-[10px] text-slate-300 uppercase">${id}</span></td>
+                            <td class="p-6 text-center text-xl font-black text-blue-600">${item.stock}</td>
+                            <td class="p-6 text-right space-x-2">
+                                <button onclick="editAdminProduct('${id}')" class="text-blue-500 font-bold text-xs uppercase">Sửa</button>
+                                <button onclick="deleteAdminProduct('${id}')" class="text-red-300 font-bold text-xs uppercase">Xóa</button>
                             </td>
                         </tr>
-                    `;
-                    setTimeout(() => { new QRCode(document.getElementById(`qr-${key}`), { text: key, width: 60, height: 60 }); }, 50);
+                    `);
+                    new QRCode(document.getElementById(`qr-${id}`), { text: id, width: 60, height: 60 });
                 }
             });
 
-            db.ref('notifications').on('child_added', (s) => {
-                const n = s.val();
-                if(Date.now() - n.time < 15000) showToast(n.staff, n.prod, n.qty);
+            // Lắng nghe thông báo lấy hàng
+            db.ref('logs').limitToLast(1).on('child_added', (s) => {
+                const log = s.val();
+                if(Date.now() - log.time < 5000) showToast(log.staff, log.prod, log.qty);
             });
         }
 
-        function addProduct() {
+        function adminUpdateStock() {
             const name = document.getElementById('p-name').value;
-            const id = document.getElementById('p-id').value;
+            const id = document.getElementById('p-id').value.toUpperCase().trim();
             const stock = parseInt(document.getElementById('p-stock').value);
-            if(name && id && !isNaN(stock)) {
-                db.ref('inventory/' + id).set({ name, stock });
+            if(!name || !id || isNaN(stock)) return alert("Hãy nhập đủ Tên, Mã QR và Số lượng!");
+            
+            db.ref('inventory/' + id).set({ name, stock }, () => {
+                alert("Đã lưu vào Database!");
                 document.getElementById('p-name').value = ""; document.getElementById('p-id').value = ""; document.getElementById('p-stock').value = "";
-            } else alert("Vui lòng điền đủ thông tin sản phẩm!");
+            });
         }
 
-        function editStock(id) {
-            const n = prompt("Số lượng tồn kho thực tế hiện tại là bao nhiêu?");
+        function editAdminProduct(id) {
+            const n = prompt("Số lượng nhập kho thực tế hiện tại:");
             if(n !== null) db.ref('inventory/' + id + '/stock').set(parseInt(n));
         }
 
-        function deleteItem(id) {
-            if(confirm("Xóa vĩnh viễn sản phẩm này khỏi hệ thống?")) db.ref('inventory/' + id).remove();
+        function deleteAdminProduct(id) {
+            if(confirm("Xóa vĩnh viễn sản phẩm này?")) db.ref('inventory/' + id).remove();
         }
 
-        function printQR(id) {
-            const win = window.open('', '_blank');
-            win.document.write('<html><body style="text-align:center;padding:50px;">');
-            win.document.write('<h1>MÃ QR SẢN PHẨM: ' + id + '</h1>');
-            win.document.write('<div id="pqr"></div>');
-            win.document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
-            win.document.write('<script>new QRCode(document.getElementById("pqr"), {text:"' + id + '", width:300, height:300}); setTimeout(()=>window.print(), 500);<\/script>');
-            win.document.write('</body></html>');
-            win.document.close();
+        // --- DÀNH CHO NHÂN VIÊN ---
+        function initStaff() {
+            db.ref('inventory').on('value', (s) => {
+                const data = s.val();
+                const list = document.getElementById('staff-inventory-list');
+                list.innerHTML = "";
+                for(let id in data) {
+                    const item = data[id];
+                    list.insertAdjacentHTML('beforeend', `
+                        <div class="p-5 flex justify-between items-center bg-white">
+                            <div><p class="font-bold text-slate-700">${item.name}</p><p class="text-[10px] text-slate-300 font-mono">${id}</p></div>
+                            <div class="text-right">
+                                <p class="text-[10px] font-black text-slate-300 uppercase">Còn lại</p>
+                                <p class="text-2xl font-black ${item.stock > 0 ? 'text-blue-600' : 'text-red-400'}">${item.stock}</p>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
         }
 
-        // --- 5. LOGIC NHÂN VIÊN ---
-        function startScanner() {
-            const scanner = new Html5Qrcode("reader");
-            scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
-                scanner.stop();
-                processExport(text);
-            }).catch(err => alert("LỖI CAMERA: Vui lòng cho phép truy cập camera!"));
+        function openScanner() {
+            document.getElementById('scanner-modal').classList.remove('hidden');
+            if(!scanner) scanner = new Html5Qrcode("reader");
+            scanner.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => {
+                closeScanner();
+                processStaffWithdraw(text);
+            }).catch(err => alert("Lỗi camera!"));
         }
 
-        function processExport(pid) {
+        function closeScanner() {
+            if(scanner) scanner.stop();
+            document.getElementById('scanner-modal').classList.add('hidden');
+        }
+
+        function processStaffWithdraw(pid) {
             db.ref('inventory/' + pid).once('value', (s) => {
                 const item = s.val();
-                if(!item) return alert("KHÔNG TÌM THẤY SẢN PHẨM NÀY!");
-                const qtyStr = prompt(`XUẤT KHO: ${item.name}\nHiện có: ${item.stock}\nBạn lấy bao nhiêu cái?`, "1");
+                if(!item) return alert("Mã QR này không có trong kho!");
+                
+                const qtyStr = prompt(`SẢN PHẨM: ${item.name}\nTồn kho: ${item.stock}\nBạn lấy bao nhiêu cái?`, "1");
                 const qty = parseInt(qtyStr);
-                if(qty > 0 && item.stock >= qty) {
-                    db.ref('inventory/' + pid + '/stock').set(item.stock - qty);
-                    db.ref('notifications').push({ staff: currentUser.name, prod: item.name, qty, time: Date.now() });
-                    alert("XUẤT KHO THÀNH CÔNG!");
-                } else { alert("LỖI: Số lượng không hợp lệ hoặc kho không đủ hàng!"); }
+                
+                if(qty > 0 && qty <= item.stock) {
+                    const newStock = item.stock - qty;
+                    // Trừ kho
+                    db.ref('inventory/' + pid + '/stock').set(newStock);
+                    // Lưu nhật ký lấy hàng
+                    db.ref('logs').push({
+                        staff: currentUser.name,
+                        prod: item.name,
+                        qty: qty,
+                        time: Date.now()
+                    });
+                    alert(`✅ THÀNH CÔNG: Đã lấy ${qty} ${item.name}`);
+                } else {
+                    alert("Số lượng sai hoặc hàng trong kho không đủ!");
+                }
             });
         }
 
         function showToast(staff, prod, qty) {
-            const area = document.getElementById('notification-area');
-            const t = document.createElement('div');
-            t.className = "notification bg-gray-900 text-white p-5 rounded-2xl shadow-2xl border-l-8 border-blue-500 pointer-events-auto";
-            t.innerHTML = `
-                <div class="flex justify-between items-start mb-1">
-                    <span class="text-[10px] bg-blue-600 px-2 py-0.5 rounded uppercase font-black">Thông báo mới</span>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-gray-500">✕</button>
+            const container = document.getElementById('toast-container');
+            const id = Date.now();
+            const toast = `
+                <div id="toast-${id}" class="bg-slate-900 text-white p-5 rounded-3xl shadow-2xl flex items-center gap-4 border-l-8 border-blue-500 animate-bounce">
+                    <div>
+                        <p class="text-[10px] font-black uppercase text-blue-400 tracking-widest">Tin mới từ kho</p>
+                        <p class="text-sm"><b>${staff}</b> vừa lấy <b>${qty}</b> cái <b>${prod}</b></p>
+                    </div>
                 </div>
-                <p class="text-sm">Nhân viên <b class="text-blue-400">${staff}</b> vừa lấy <b class="text-xl">${qty}</b> cái <b class="text-blue-400">${prod}</b></p>
             `;
-            area.prepend(t);
-            setTimeout(() => t.remove(), 12000);
+            container.insertAdjacentHTML('afterbegin', toast);
+            setTimeout(() => { document.getElementById(`toast-${id}`)?.remove(); }, 10000);
         }
     </script>
 </body>
