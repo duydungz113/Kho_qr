@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>KHO QR PRO - QUẢN TRỊ VIÊN</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>KHO QR PRO v5.0</title>
     
     <!-- Firebase & Libraries -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -19,20 +20,19 @@
         .hidden { display: none !important; }
         .btn-active:active { transform: scale(0.95); transition: 0.1s; }
         .qr-canvas canvas { display: inline-block !important; border: 4px solid white; border-radius: 12px; shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        #reader video { border-radius: 20px !important; object-fit: cover !important; }
-        .admin-edit-btn { background-color: #3b82f6; color: white; padding: 4px 12px; border-radius: 8px; font-weight: bold; font-size: 11px; }
-        .admin-delete-btn { background-color: #ef4444; color: white; padding: 4px 12px; border-radius: 8px; font-weight: bold; font-size: 11px; }
+        #reader video { border-radius: 30px !important; object-fit: cover !important; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">
 
-    <!-- LOADER -->
+    <!-- MÀN HÌNH CHỜ -->
     <div id="loader" class="fixed inset-0 bg-white z-[9999] flex flex-col items-center justify-center text-center">
         <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p class="mt-4 font-bold text-blue-600 animate-pulse text-xs uppercase tracking-widest italic">Hệ thống đang đồng bộ...</p>
+        <p class="mt-4 font-bold text-blue-600 animate-pulse text-xs uppercase tracking-widest italic">Đang tải dữ liệu kho...</p>
     </div>
 
-    <!-- AUTH PAGE -->
+    <!-- TRANG ĐĂNG NHẬP / ĐĂNG KÝ -->
     <div id="auth-page" class="hidden min-h-screen flex items-center justify-center p-6 bg-blue-700">
         <div class="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-md">
             <h2 id="auth-title" class="text-3xl font-black text-center text-slate-800 mb-8 uppercase tracking-tighter">Đăng Nhập</h2>
@@ -40,52 +40,51 @@
                 <input type="text" id="login-user" placeholder="Tên Admin hoặc SĐT" class="w-full p-4 bg-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-center border-none">
                 <input type="password" id="login-pass" placeholder="Mật khẩu" class="w-full p-4 bg-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-center border-none">
                 <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-5 rounded-3xl font-black text-xl shadow-xl btn-active uppercase tracking-widest">VÀO HỆ THỐNG</button>
-                <button onclick="toggleAuth(true)" class="w-full text-blue-600 font-bold text-xs uppercase text-center mt-4 tracking-widest">Đăng ký nhân viên</button>
+                <button onclick="toggleAuth(true)" class="w-full text-blue-600 font-bold text-xs uppercase text-center mt-4 tracking-widest underline">Đăng ký nhân viên</button>
             </div>
-            <div id="register-form" class="hidden space-y-4">
-                <input type="text" id="reg-name" placeholder="Tên nhân viên" class="w-full p-4 bg-slate-100 rounded-2xl outline-none">
-                <input type="text" id="reg-phone" placeholder="Số điện thoại" class="w-full p-4 bg-slate-100 rounded-2xl outline-none">
-                <input type="password" id="reg-pass" placeholder="Mật khẩu tự chọn" class="w-full p-4 bg-slate-100 rounded-2xl outline-none">
-                <button onclick="handleRegister()" class="w-full bg-green-600 text-white p-5 rounded-3xl font-black text-xl btn-active uppercase">Tạo tài khoản</button>
-                <button onclick="toggleAuth(false)" class="w-full text-slate-500 font-bold text-xs uppercase text-center block">Quay lại</button>
+            <div id="register-form" class="hidden space-y-4 text-center">
+                <input type="text" id="reg-name" placeholder="Tên nhân viên" class="w-full p-4 bg-slate-100 rounded-2xl outline-none border-none font-bold">
+                <input type="text" id="reg-phone" placeholder="Số điện thoại" class="w-full p-4 bg-slate-100 rounded-2xl outline-none border-none font-bold">
+                <input type="password" id="reg-pass" placeholder="Mật khẩu tự chọn" class="w-full p-4 bg-slate-100 rounded-2xl outline-none border-none font-bold">
+                <button onclick="handleRegister()" class="w-full bg-green-600 text-white p-5 rounded-3xl font-black text-xl btn-active uppercase shadow-lg">Tạo tài khoản</button>
+                <button onclick="toggleAuth(false)" class="w-full text-slate-500 font-bold text-xs uppercase mt-2">Quay lại</button>
             </div>
         </div>
     </div>
 
-    <!-- ADMIN PAGE -->
+    <!-- TRANG ADMIN -->
     <div id="admin-page" class="hidden">
         <nav class="bg-white border-b p-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
             <div class="flex items-center gap-2">
-                <span class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black italic shadow-lg shadow-blue-200">K</span>
-                <span class="font-black text-slate-800 uppercase tracking-tighter">Quản Lý Tổng Kho</span>
+                <span class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black italic">K</span>
+                <span class="font-black text-slate-800 uppercase tracking-tighter italic">Tổng Kho Admin</span>
             </div>
             <button onclick="logout()" class="text-red-500 font-bold text-[10px] uppercase border border-red-100 px-3 py-1 rounded-lg">Đăng xuất</button>
         </nav>
         <main class="p-4 max-w-7xl mx-auto space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <!-- Nhập hàng mới -->
-                <div class="lg:col-span-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-200 h-fit">
+                <div class="lg:col-span-4 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
                     <h3 class="font-black text-blue-600 mb-6 text-xs uppercase tracking-[0.2em]">Nhập sản phẩm mới</h3>
                     <div class="space-y-4">
                         <input type="text" id="p-name" placeholder="Tên hàng hóa" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                        <input type="number" id="p-stock" placeholder="Số lượng nhập kho" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                        <div class="bg-blue-50 p-3 rounded-xl"><p class="text-[9px] text-blue-500 font-bold">Hệ thống sẽ tự động tạo mã QR sau khi lưu.</p></div>
-                        <button onclick="adminAddProduct()" class="w-full bg-blue-600 text-white p-4 rounded-2xl font-black btn-active uppercase shadow-xl">XÁC NHẬN LƯU KHO</button>
+                        <input type="number" id="p-stock" placeholder="Số lượng nhập" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                        <button onclick="adminAddProduct()" class="w-full bg-blue-600 text-white p-4 rounded-2xl font-black btn-active uppercase shadow-lg">LƯU KHO</button>
                     </div>
                 </div>
                 <!-- Danh sách nhân viên -->
                 <div class="lg:col-span-8 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="p-4 bg-slate-800 text-white font-black text-[10px] uppercase text-center tracking-widest">Danh sách nhân viên (Quản lý mật khẩu)</div>
+                    <div class="p-4 bg-slate-800 text-white font-black text-[10px] uppercase text-center tracking-widest italic">Danh sách nhân viên (Quản lý mật khẩu)</div>
                     <div class="max-h-48 overflow-y-auto"><table class="w-full text-left text-xs"><tbody id="admin-staff-list" class="divide-y divide-slate-100"></tbody></table></div>
                 </div>
             </div>
             <!-- Bảng tồn kho Admin -->
             <div class="bg-white rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden">
-                <div class="p-5 bg-blue-600 text-white font-black text-[10px] uppercase text-center tracking-widest italic font-bold">Bảng điều khiển tồn kho thực tế</div>
+                <div class="p-5 bg-blue-600 text-white font-black text-[10px] uppercase text-center tracking-widest italic">Bảng tồn kho thực tế</div>
                 <div class="overflow-x-auto text-sm">
                     <table class="w-full text-left">
                         <thead class="bg-slate-50 border-b text-[10px] text-slate-400 font-black uppercase">
-                            <tr><th class="p-6">Mã QR</th><th class="p-6">Tên sản phẩm</th><th class="p-6 text-center">Tồn kho</th><th class="p-6 text-right">Hành động</th></tr>
+                            <tr><th class="p-6">Mã QR</th><th class="p-6 text-center">Tên SP</th><th class="p-6 text-center">Tồn</th><th class="p-6 text-right">Xử lý</th></tr>
                         </thead>
                         <tbody id="admin-inventory-list" class="divide-y divide-slate-100 font-medium"></tbody>
                     </table>
@@ -94,26 +93,46 @@
         </main>
     </div>
 
-    <!-- STAFF PAGE -->
+    <!-- TRANG NHÂN VIÊN -->
     <div id="staff-page" class="hidden min-h-screen">
-        <nav class="bg-white border-b p-5 flex justify-between items-center sticky top-0 z-50 shadow-sm">
-            <div><p class="text-[10px] font-black text-slate-400 uppercase">Nhân viên</p><p id="staff-display-name" class="font-black text-blue-600 text-lg"></p></div>
-            <button onclick="logout()" class="text-slate-300 font-bold text-xs uppercase underline">Thoát</button>
+        <nav class="bg-white border-b p-5 flex justify-between items-center sticky top-0 z-50">
+            <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Chào nhân viên</p><p id="staff-display-name" class="font-black text-blue-600 text-lg italic"></p></div>
+            <button onclick="logout()" class="text-slate-300 font-bold text-xs uppercase underline tracking-widest">Thoát</button>
         </nav>
-        <div class="p-4 max-w-md mx-auto space-y-6">
-            <button onclick="openScanner()" class="w-full bg-blue-600 text-white p-10 rounded-[3rem] font-black text-2xl shadow-2xl flex flex-col items-center justify-center gap-4 btn-active border-b-[10px] border-blue-800 mt-4 italic">QUÉT MÃ LẤY HÀNG</button>
-            <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-                <div class="p-4 bg-slate-50 border-b font-black text-[10px] uppercase text-slate-400 text-center tracking-widest italic">Hàng hiện có trong kho</div>
+        <div class="p-6 max-w-md mx-auto space-y-8">
+            <button onclick="openScanner()" class="w-full bg-blue-600 text-white py-12 rounded-[3.5rem] font-black text-2xl shadow-2xl flex flex-col items-center justify-center gap-4 btn-active border-b-[10px] border-blue-800">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                QUÉT MÃ LẤY HÀNG
+            </button>
+            <div class="bg-white rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b font-black text-[10px] uppercase text-slate-400 text-center tracking-widest">Kho hàng hiện tại</div>
                 <div id="staff-inventory-list" class="divide-y divide-slate-100"></div>
             </div>
         </div>
     </div>
 
-    <!-- MODALS -->
-    <div id="scanner-modal" class="fixed inset-0 bg-black z-[100] hidden flex flex-col items-center justify-center p-8 text-white">
-        <div id="reader" class="w-full max-w-sm rounded-[3rem] overflow-hidden border-4 border-white shadow-2xl"></div>
-        <button onclick="closeScanner()" class="mt-12 bg-white/20 px-10 py-4 rounded-full font-black uppercase text-xs tracking-widest btn-active backdrop-blur-md">Đóng máy quét</button>
+    <!-- MÀN HÌNH NHẬP SỐ LƯỢNG SAU KHI QUÉT (YÊU CẦU CỦA BẠN) -->
+    <div id="withdraw-modal" class="fixed inset-0 bg-black/80 z-[110] hidden flex items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[3rem] p-8 shadow-2xl text-center">
+            <p class="text-blue-600 font-black text-[10px] uppercase mb-2 tracking-[0.2em]">Xác nhận lấy hàng</p>
+            <h2 id="w-product-name" class="text-2xl font-black text-slate-800 mb-1 italic">Tên sản phẩm</h2>
+            <p id="w-product-stock" class="text-slate-400 font-bold text-sm mb-6 uppercase">Hiện có: 0</p>
+            
+            <div class="space-y-4">
+                <p class="text-xs font-black text-slate-500 uppercase tracking-widest">Nhập số lượng lấy:</p>
+                <input type="number" id="w-quantity" placeholder="0" class="w-full text-center text-4xl font-black p-5 bg-slate-100 rounded-3xl outline-none focus:ring-4 focus:ring-blue-100 border-none">
+                <button onclick="confirmWithdraw()" class="w-full bg-blue-600 text-white p-5 rounded-3xl font-black text-lg shadow-xl btn-active uppercase tracking-tighter">XÁC NHẬN LẤY HÀNG</button>
+                <button onclick="closeWithdraw()" class="w-full text-slate-400 font-bold text-xs uppercase underline">Hủy bỏ</button>
+            </div>
+        </div>
     </div>
+
+    <!-- MÀN HÌNH CAMERA -->
+    <div id="scanner-modal" class="fixed inset-0 bg-black z-[100] hidden flex flex-col items-center justify-center p-8 text-white">
+        <div id="reader" class="w-full max-w-sm rounded-[3rem] overflow-hidden border-4 border-white mb-8 shadow-2xl"></div>
+        <button onclick="closeScanner()" class="bg-white/20 px-12 py-5 rounded-full font-black uppercase text-xs tracking-widest backdrop-blur-md btn-active">Đóng máy quét</button>
+    </div>
+
     <div id="toast-container" class="fixed bottom-10 right-6 w-80 space-y-3 z-[9999] pointer-events-none"></div>
 
     <script>
@@ -131,6 +150,7 @@
         const db = firebase.database();
         const auth = firebase.auth();
         let currentUser = JSON.parse(localStorage.getItem('kho_session_v4'));
+        let currentScanId = null; 
         let scanner = null;
 
         function hideLoader() {
@@ -156,14 +176,14 @@
             const n = document.getElementById('reg-name').value;
             const ph = document.getElementById('reg-phone').value;
             const pa = document.getElementById('reg-pass').value;
-            if(n && ph && pa) db.ref('users/' + ph).set({ name: n, phone: ph, pass: pa, role: 'staff' }, (e) => { if(!e) { alert("Xong!"); toggleAuth(false); } });
+            if(n && ph && pa) db.ref('users/' + ph).set({ name: n, phone: ph, pass: pa, role: 'staff' }, (e) => { if(!e) { alert("Xong! Hãy đăng nhập."); toggleAuth(false); } });
         }
 
         function handleLogin() {
             const u = document.getElementById('login-user').value.trim();
             const p = document.getElementById('login-pass').value.trim();
-            if(u === 'Admin' && p === '3032002') saveSession({ name: 'Chủ Kho', role: 'admin' });
-            else db.ref('users/' + u).once('value', (s) => { const user = s.val(); if(user && user.pass === p) saveSession(user); else alert("Sai!"); });
+            if(u === 'Admin' && p === '3032002') saveSession({ name: 'Quản trị viên', role: 'admin' });
+            else db.ref('users/' + u).once('value', (s) => { const user = s.val(); if(user && user.pass === p) saveSession(user); else alert("Sai tài khoản!"); });
         }
 
         function saveSession(u) { localStorage.setItem('kho_session_v4', JSON.stringify(u)); location.reload(); }
@@ -179,11 +199,11 @@
                     list.insertAdjacentHTML('beforeend', `
                         <tr class="border-b border-slate-50 transition hover:bg-slate-50">
                             <td class="p-6"><div id="qr-${id}" class="qr-canvas" onclick="printQR('${id}', '${item.name}')"></div></td>
-                            <td class="p-6 font-black text-slate-700 italic">${item.name}<br><span class="text-[9px] text-slate-300 font-mono tracking-widest uppercase">${id}</span></td>
-                            <td class="p-6 text-center text-4xl font-black text-blue-600 tracking-tighter">${item.stock}</td>
+                            <td class="p-6 font-black text-slate-700 italic uppercase text-center">${item.name}<br><span class="text-[9px] text-slate-300 font-mono tracking-widest">${id}</span></td>
+                            <td class="p-6 text-center text-3xl font-black text-blue-600 tracking-tighter">${item.stock}</td>
                             <td class="p-6 text-right space-y-2">
-                                <button onclick="adminEditProduct('${id}', '${item.name}', ${item.stock})" class="admin-edit-btn uppercase shadow-sm">Sửa</button>
-                                <button onclick="adminDeleteItem('${id}')" class="admin-delete-btn uppercase shadow-sm">Xóa</button>
+                                <button onclick="adminEditProduct('${id}', '${item.name}', ${item.stock})" class="bg-blue-600 text-white px-3 py-1 rounded-lg font-bold text-[10px] uppercase block ml-auto">Sửa</button>
+                                <button onclick="adminDeleteItem('${id}')" class="bg-red-500 text-white px-3 py-1 rounded-lg font-bold text-[10px] uppercase block ml-auto mt-1">Xóa</button>
                             </td>
                         </tr>
                     `);
@@ -211,22 +231,6 @@
             db.ref('logs').limitToLast(1).on('child_added', (s) => { const log = s.val(); if(Date.now() - log.time < 5000) showAdminToast(log.staff, log.prod, log.qty); });
         }
 
-        // HÀM ADMIN: SỬA TÊN VÀ SỐ LƯỢNG
-        function adminEditProduct(id, currentName, currentStock) {
-            const newName = prompt("Nhập TÊN MỚI cho sản phẩm:", currentName);
-            if (newName === null || newName.trim() === "") return;
-            
-            const newStock = prompt("Nhập SỐ LƯỢNG MỚI (Từ " + currentStock + " sửa thành):", currentStock);
-            if (newStock === null || isNaN(newStock)) return;
-
-            db.ref('inventory/' + id).update({
-                name: newName,
-                stock: parseInt(newStock)
-            }, (err) => {
-                if(!err) alert("Đã cập nhật thành công!");
-            });
-        }
-
         function adminAddProduct() {
             const n = document.getElementById('p-name').value.trim();
             const s = parseInt(document.getElementById('p-stock').value);
@@ -235,7 +239,15 @@
             db.ref('inventory/' + id).set({ name: n, stock: s }, (e) => { if(!e) { document.getElementById('p-name').value = ""; document.getElementById('p-stock').value = ""; } });
         }
 
-        function adminDeleteItem(id) { if(confirm("Xác nhận xóa hoàn toàn sản phẩm này?")) db.ref('inventory/' + id).remove(); }
+        function adminEditProduct(id, currentName, currentStock) {
+            const newName = prompt("TÊN MỚI:", currentName);
+            if (!newName) return;
+            const newStock = prompt("SỐ LƯỢNG MỚI:", currentStock);
+            if (newStock === null) return;
+            db.ref('inventory/' + id).update({ name: newName, stock: parseInt(newStock) }, (e) => { if(!e) alert("Xong!"); });
+        }
+
+        function adminDeleteItem(id) { if(confirm("Xác nhận xóa?")) db.ref('inventory/' + id).remove(); }
         function adminDeleteUser(ph) { if(confirm("Xóa nhân viên?")) db.ref('users/' + ph).remove(); }
 
         function printQR(id, name) {
@@ -254,7 +266,7 @@
                     list.insertAdjacentHTML('beforeend', `
                         <div class="p-6 flex justify-between items-center bg-white border-b border-slate-50">
                             <div><p class="font-black text-slate-700 italic uppercase font-bold underline decoration-blue-100 decoration-4">${item.name}</p><p class="text-[9px] text-slate-300 font-mono tracking-widest uppercase">${id}</p></div>
-                            <div class="text-right"><p class="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">Tồn hiện tại</p><p class="text-3xl font-black ${item.stock > 0 ? 'text-blue-600' : 'text-red-400'} tracking-tighter">${item.stock}</p></div>
+                            <div class="text-right"><p class="text-[9px] font-black text-slate-300 uppercase tracking-widest italic">Tồn kho</p><p class="text-3xl font-black ${item.stock > 0 ? 'text-blue-600' : 'text-red-400'} tracking-tighter">${item.stock}</p></div>
                         </div>
                     `);
                 }
@@ -266,19 +278,48 @@
             if(!scanner) scanner = new Html5Qrcode("reader");
             scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
                 closeScanner();
-                db.ref('inventory/' + text).once('value', (s) => {
-                    const item = s.val();
-                    if(!item) return alert("Mã sai!");
-                    const qStr = prompt("Lấy " + item.name + ". Nhập số lượng lấy:", "1");
-                    const q = parseInt(qStr);
-                    if(q > 0 && item.stock >= q) {
-                        db.ref('inventory/' + text + '/stock').set(item.stock - q, (e) => { if(!e) { db.ref('logs').push({ staff: currentUser.name, prod: item.name, qty: q, time: Date.now() }); alert("Xuất kho thành công!"); } });
-                    } else alert("Số lượng sai!");
-                });
+                showWithdrawModal(text);
             }).catch(e => alert("Lỗi camera!"));
         }
 
         function closeScanner() { if(scanner) scanner.stop(); document.getElementById('scanner-modal').classList.add('hidden'); }
+
+        // MÀN HÌNH NHẬP SỐ LƯỢNG MỚI (CHUYÊN NGHIỆP)
+        function showWithdrawModal(pid) {
+            currentScanId = pid;
+            db.ref('inventory/' + pid).once('value', (s) => {
+                const item = s.val();
+                if(!item) return alert("Sai mã!");
+                document.getElementById('w-product-name').innerText = item.name;
+                document.getElementById('w-product-stock').innerText = "Hiện có trong kho: " + item.stock;
+                document.getElementById('w-quantity').value = "";
+                document.getElementById('withdraw-modal').classList.remove('hidden');
+            });
+        }
+
+        function closeWithdraw() {
+            document.getElementById('withdraw-modal').classList.add('hidden');
+            currentScanId = null;
+        }
+
+        function confirmWithdraw() {
+            const qty = parseInt(document.getElementById('w-quantity').value);
+            if(!qty || qty <= 0) return alert("Vui lòng nhập số lượng!");
+
+            db.ref('inventory/' + currentScanId).once('value', (s) => {
+                const item = s.val();
+                if(qty > item.stock) return alert("Lỗi: Số lượng lấy vượt quá hàng trong kho!");
+
+                const newStock = item.stock - qty;
+                db.ref('inventory/' + currentScanId + '/stock').set(newStock, (e) => {
+                    if(!e) {
+                        db.ref('logs').push({ staff: currentUser.name, prod: item.name, qty: qty, time: Date.now() });
+                        alert("✅ ĐÃ LẤY " + qty + " " + item.name + " THÀNH CÔNG!");
+                        closeWithdraw();
+                    }
+                });
+            });
+        }
 
         function showAdminToast(staff, prod, qty) {
             const container = document.getElementById('toast-container');
